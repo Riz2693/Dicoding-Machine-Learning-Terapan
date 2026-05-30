@@ -5,6 +5,10 @@ Dalam era digital modern, penggunaan perangkat *Generative AI* telah menjadi ala
 
 Proyek ini bertujuan untuk menganalisis dan memprediksi tingkat risiko *burnout* mahasiswa (*Burnout Risk Level*) berdasarkan pola penggunaan AI, kinerja akademik, serta kebiasaan belajar mereka. Menyelesaikan masalah ini menjadi sangat krusial bagi institusi pendidikan agar dapat merumuskan kebijakan penggunaan AI yang tepat dan memberikan intervensi dini bagi mahasiswa yang rentan mengalami *burnout*. 
 
+**Referensi Riset Terkait:**
+- A. . Wafiq, A. Syawal, I. ., and Z. A. Ahmad, “Burnout Akademik di Era Digital dan Persepsi Mahasiswa terhadap Peluang Pemanfaatan Artificial Intelligence untuk Deteksi Dini”, JSIT, vol. 5, no. 3, pp. 426–434, Nov. 2025.
+- https://www.yarsi.ac.id/ketergantungan-ai-ancam-daya-pikir-siswa-akademisi-ingatkan-risiko-cognitive-debt
+
 ## Business Understanding
 ### Problem Statements
 - **Pernyataan Masalah 1:** Faktor-faktor apa saja dari pola penggunaan AI dan kebiasaan belajar yang memiliki korelasi paling signifikan terhadap tingkat risiko *burnout* mahasiswa?
