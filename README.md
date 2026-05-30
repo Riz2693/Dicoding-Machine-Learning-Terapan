@@ -1,4 +1,4 @@
-# Laporan Proyek Machine Learning - Muhammad Faris Akbar
+# Laporan Proyek Machine Learning Terapan - Muhammad Faris Akbar
 
 ## Domain Proyek
 Dalam era digital modern, penggunaan perangkat *Generative AI* telah menjadi alat bantu utama bagi mahasiswa dalam menunjang aktivitas akademik mereka. Berbagai macam *tools* AI digunakan untuk *copywriting*, merangkum bacaan, pencarian ide, hingga *debugging* kode. Namun, pemanfaatan AI yang tidak terkendali atau tingkat ketergantungan yang terlalu tinggi dapat memicu dampak negatif, salah satunya adalah kelelahan mental atau *burnout* pada mahasiswa. 
