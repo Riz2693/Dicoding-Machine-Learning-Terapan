@@ -58,22 +58,38 @@ Berikut adalah penjelasan detail untuk masing-masing kolom pada dataset:
 Tahapan persiapan data (*Data Preparation*) dilakukan setelah data dipastikan bersih dari nilai Missing, Duplikat, dan Outlier, namun seperti yang telah dijabarkan sebelumnya, data yang digunakan ini bersih dari nilai Missing, Duplikat, dan Outlier nya pun dipertahankan, maka pada tahapan data preparation ini tidak akan dilakukan pre-processing untuk menangani 3 hal tersebut, namun langsung dilakukan tahapan preparation secara berurutan pada proyek ini adalah:
 
 1. **Menghapus Kolom (Drop):** Menghapus fitur `Student_ID` karena hanya berperan sebagai pengidentifikasi baris dan tidak memiliki bobot informasi untuk dipelajari oleh model pembelajaran mesin.
-2. **Encoding Data Kategorikal:**
+
+2. **Analisis Tren Pada Data:** Menganalisis tren dan persebaran data pada untuk mengetahui pola yang terdapat pada data. Dimana, dari analisis Trend ini didapatkan beberapa hasil analisis antara lain:
+
+   <img width="1482" height="922" alt="image" src="https://github.com/user-attachments/assets/b046afca-115e-43c4-9912-e5aa0ae83dc3" />
+
+   - Semakin tinggi tingkat anxiety ketika ujian dan semakin ketergantungan seseorang terhadap AI, maka semakin tinggi pula tingkatan burnout nya.
+   - Semakin tinggi jumlah jam belajar tradisional seseorang, maka semakin rendah tingkatan burnout nya.
+   - Semakin banyak jumlah tools AI yang digunakan, maka semakin tinggi pula tingkatan burnout nya.
+   - Semakin tinggi nilai keterampilan pembelajaran siswa sampai akhir semester, maka tingkatan burnout nya menjadi semakin rendah.
+
+4. **Encoding Data Kategorikal:**
    - *Label Encoding* pada target `Burnout_Risk_Level` agar berubah dari teks menjadi numerik (0, 1, 2).
    - *Ordinal Mapping* pada fitur yang memiliki tingkatan seperti `Prompt_Engineering_Skill` (0=Beginner, 1=Intermediate, 2=Advanced) dan `Year_of_Study` (1=Freshman, dst).
    - Mengubah tipe data *Boolean* (`Paid_Subscription` dkk) menjadi numerik `int` (1 dan 0).
    - Melakukan *One-Hot Encoding* menggunakan fungsi pandas `get_dummies()` pada sisa kolom kategorikal nominal untuk mengubahnya menjadi matriks biner.
-3. **Feature Engineering:** Menciptakan fitur turunan baru yang logis untuk menambah variasi informasi, yaitu:
+
+5. **Feature Engineering:** Menciptakan fitur turunan baru yang logis untuk menambah variasi informasi, yaitu:
    - `gpa_difference`: Mengurangkan nilai IPK Akhir dengan IPK Awal untuk melihat progres nilai.
    - `hours_per_week`: Menjumlahkan jam belajar menggunakan AI dengan jam belajar tradisional untuk melihat total beban belajar mingguan.
-4. **Analisis Korelasi & Seleksi Fitur:** Menghitung korelasi dengan metode *Spearman*. 
+
+6. **Analisis Korelasi & Seleksi Fitur:** Menghitung korelasi dengan metode *Spearman*. 
    - Ditemukan bahwa kolom `Pre_Semester_GPA` memiliki korelasi sangat ekstrem (mendekati 1.0) dengan `Post_Semester_GPA`, yang berpotensi menyebabkan redudansi (multikolinearitas), sehingga kolom `Pre_Semester_GPA` **dihapus**. 
    - Selanjutnya, 15 kolom dengan korelasi tertinggi terhadap target diseleksi untuk masuk ke tahap pemodelan.
-5. **Pemilihan Fitur (X) dan Target (y):** - Variabel Independen **(X)** ditetapkan sebagai seluruh kolom dari dataset hasil seleksi *kecuali* kolom `Burnout_Risk_Level`. Variabel X memuat fitur perilaku dan akademik.
+
+7. **Pemilihan Fitur (X) dan Target (y):** - Variabel Independen **(X)** ditetapkan sebagai seluruh kolom dari dataset hasil seleksi *kecuali* kolom `Burnout_Risk_Level`. Variabel X memuat fitur perilaku dan akademik.
    - Variabel Dependen **(y)** ditetapkan murni pada kolom `Burnout_Risk_Level` yang merupakan label kelas yang harus diprediksi oleh model.
-6. **Resampling Data (Upsampling):** Distribusi target menunjukkan dominasi di kelas *Medium*. Untuk mencegah model menjadi bias ke kelas mayoritas, dilakukan *upsampling* secara acak (menggandakan data minoritas) pada kelas *High* dan *Low* sehingga jumlah ketiga kelas menjadi sama persis.
-7. **Train-Test Split:** Membagi keseluruhan dataset yang telah seimbang menjadi data latih (*training data*) sebesar 80% dan data uji (*testing data*) sebesar 20% menggunakan `train_test_split`.
-8. **Standarisasi (Scaling):** Menggunakan `StandardScaler` pada data X_train dan X_test. Langkah ini sangat penting agar fitur yang memiliki rentang nilai berbeda (seperti IPK skala 4 dengan skor retensi skala 100) memiliki skala yang seragam (rata-rata 0, deviasi standar 1), sehingga algoritma model tidak terdistorsi.
+
+8. **Resampling Data (Upsampling):** Distribusi target menunjukkan dominasi di kelas *Medium*. Untuk mencegah model menjadi bias ke kelas mayoritas, dilakukan *upsampling* secara acak (menggandakan data minoritas) pada kelas *High* dan *Low* sehingga jumlah ketiga kelas menjadi sama persis.
+
+9. **Train-Test Split:** Membagi keseluruhan dataset yang telah seimbang menjadi data latih (*training data*) sebesar 80% dan data uji (*testing data*) sebesar 20% menggunakan `train_test_split`.
+
+10. **Standarisasi (Scaling):** Menggunakan `StandardScaler` pada data X_train dan X_test. Langkah ini sangat penting agar fitur yang memiliki rentang nilai berbeda (seperti IPK skala 4 dengan skor retensi skala 100) memiliki skala yang seragam (rata-rata 0, deviasi standar 1), sehingga algoritma model tidak terdistorsi.
 
 ## Modeling
 
@@ -81,16 +97,17 @@ Proyek ini menggunakan dua algoritma berbasis pohon (*tree-based algorithm*) unt
 
 ### Model 1: Random Forest Classifier
 - **Pembahasan Cara Kerja:** Random Forest adalah algoritma ansambel (*ensemble*) yang menggunakan teknik *Bagging* (Bootstrap Aggregating). Algoritma ini membangun banyak pohon keputusan (*Decision Trees*) secara independen menggunakan sampel acak dari data. Saat melakukan klasifikasi, setiap pohon akan memberikan prediksi (seperti melakukan voting), dan kelas dengan suara terbanyak (*majority vote*) akan dipilih sebagai hasil prediksi akhir.
-- **Pembahasan Parameter:** - **Parameter Baseline (Inisialisasi Awal):** Menggunakan `n_estimators = 100` (jumlah pohon) dan `random_state = 42`. Parameter `max_depth` (kedalaman pohon) dibiarkan pada setelan **default** (None), yang berarti pohon akan tumbuh terus hingga semua daun (*leaves*) menjadi murni (pure).
+- **Pembahasan Parameter:**
+  - **Parameter Baseline (Inisialisasi Awal):** Menggunakan `n_estimators = 100` (jumlah pohon) dan `random_state = 42`. Parameter `max_depth` (kedalaman pohon) dibiarkan pada setelan **default** (None), yang berarti pohon akan tumbuh terus hingga semua daun (*leaves*) menjadi murni (pure).
   - **Parameter Terbaik (Tuned):** Setelah dilakukan *GridSearchCV*, didapatkan parameter terbaik: `{'max_depth': 7, 'min_samples_split': 5, 'n_estimators': 100}`.
-- **Kelebihan/Kekurangan:** Kelebihannya adalah sangat tangguh terhadap *outlier* dan mampu mengurangi varians (*overfitting*) berkat sistem *voting* dari banyak pohon. Kekurangannya adalah proses pelatihan membutuhkan waktu komputasi yang lebih lama dibandingkan algoritma pohon tunggal.
+- **Kelebihan/Kekurangan:** Kelebihan model Random Forest adalah sangat tangguh terhadap *outlier* dan mampu mengurangi varians (*overfitting*) berkat sistem *voting* dari banyak pohon. Namun memiliki Kekurangan yaitu proses pelatihan membutuhkan waktu komputasi yang lebih lama dibandingkan algoritma pohon tunggal.
 
 ### Model 2: XGBoost Classifier (Extreme Gradient Boosting)
 - **Pembahasan Cara Kerja:** XGBoost adalah algoritma ansambel yang bekerja dengan prinsip *Boosting*. Berbeda dengan Random Forest yang membangun pohon secara paralel dan mandiri, XGBoost membangun pohon keputusannya secara sekuensial (berurutan). Pohon kedua dibangun khusus untuk memperbaiki kesalahan (*residual error*) yang dibuat oleh pohon pertama, dan seterusnya. Pembelajaran ini dioptimasi menggunakan metode *Gradient Descent*.
 - **Pembahasan Parameter:**
   - **Parameter Baseline (Inisialisasi Awal):** Menggunakan `eval_metric = 'mlogloss'` (metrik evaluasi standar untuk klasifikasi multi-kelas pada XGBoost) dan `random_state = 42`. Parameter *learning rate* dan *depth* menggunakan nilai **default** bawaan *library*.
   - **Parameter Terbaik (Tuned):** Setelah dilakukan *GridSearchCV*, didapatkan parameter terbaik: `{'learning_rate': 0.2, 'max_depth': 7, 'n_estimators': 200}`.
-- **Kelebihan/Kekurangan:** Kelebihannya memiliki performa akurasi komputasi yang sangat cepat serta fungsi penalti regulerisasi bawaan. Kekurangannya adalah sangat sensitif terhadap *outlier* dan rentan mengalami *overfitting* jika parameter *learning rate* tidak diatur dengan cermat.
+- **Kelebihan/Kekurangan:** Kelebihan Xgboost yaitu memiliki performa akurasi komputasi yang sangat cepat serta fungsi penalti regulerisasi bawaan. Namun memiliki Kekurangan karena sangat sensitif terhadap *outlier* dan rentan mengalami *overfitting* jika parameter *learning rate* tidak diatur dengan cermat.
 
 ## Evaluation
 
@@ -101,22 +118,31 @@ Untuk komparasi, nilai *Precision*, *Recall*, dan *F1-Score* yang ditampilkan di
 
 | Model Pemodelan | Skema Parameter | Accuracy | Precision (Macro) | Recall (Macro) | F1-Score (Macro) |
 | :--- | :--- | :---: | :---: | :---: | :---: |
-| **Random Forest** | Baseline (Default `max_depth`) | **71% (0.71)** | **0.71** | **0.71** | **0.71** |
+| **Random Forest** | Baseline | **71% (0.71)** | **0.71** | **0.71** | **0.71** |
 | **XGBoost** | Baseline | 52% (0.52) | 0.51 | 0.52 | 0.51 |
-| **Random Forest** | Tuned (`max_depth=7`) | 43% (0.43) | 0.41 | 0.42 | 0.40 |
-| **XGBoost** | Tuned (`learning_rate=0.2, max_depth=7`) | 60% (0.60) | 0.60 | 0.60 | 0.60 |
+| **Random Forest** | Tuned {'max_depth': 7, 'min_samples_split': 5, 'n_estimators': 100} | 43% (0.43) | 0.41 | 0.42 | 0.40 |
+| **XGBoost** | Tuned {'learning_rate': 0.2, 'max_depth': 7, 'n_estimators': 200} | 60% (0.60) | 0.60 | 0.60 | 0.60 |
 
 **Analisis Perbandingan Skema Model:**
-Dari tabel di atas, **Random Forest (Baseline)** secara mutlak merupakan model terbaik. Menariknya, ketika dilakukan *Hyperparameter Tuning* dengan membatasi kedalaman maksimal pohon menjadi 7 (`max_depth=7`), akurasi Random Forest justru anjlok secara drastis dari 71% menjadi 43%. Ini menandakan bahwa dataset sangat kompleks, sehingga ketika pohon tidak diizinkan tumbuh secara maksimal (*default*), model mengalami *underfitting* (gagal menangkap informasi esensial dari fitur-fitur yang ada).
 
-### Hubungan dengan Business Understanding
-Analisis akhir untuk menyelaraskan evaluasi model terhadap rumusan bisnis proyek:
+Berdasarkan tabel di atas, **Random Forest (Baseline)** secara mutlak merupakan model terbaik. Menariknya, ketika dilakukan *Hyperparameter Tuning* dengan membatasi kedalaman maksimal pohon menjadi 7 (`max_depth=7`), akurasi Random Forest justru anjlok secara drastis dari 71% menjadi 43%. Ini menandakan bahwa dataset sangat kompleks, sehingga ketika pohon tidak diizinkan tumbuh secara maksimal (*default*), model mengalami *underfitting* (gagal menangkap informasi esensial dari fitur-fitur yang ada). Sedangkan, akurasi XGBoost justru naik yang awalnya 52% menjadi 60% yang menandakan penyesuaian learning rate ke angka 0.2 membantu model melakukan koreksi kesalahan secara lebih efektif di setiap iterasi dibandingkan pengaturan default. Kedalaman Pohon (max_depth: 7), memberikan ruang yang cukup bagi model untuk mempelajari interaksi antar fitur tanpa terjebak pada noise. Penambahan Estimator (200) pohon memungkinkan model melakukan boosting lebih lama untuk meminimalkan nilai mlogloss secara optimal.
 
-- **Apakah sudah menjawab setiap Problem Statement?** Sudah terjawab. Melalui tahap persiapan dan seleksi fitur korelasi, kita berhasil mengidentifikasi bahwa jam penggunaan AI, *Anxiety Level*, dan keragaman *tools* merupakan metrik kunci (Pernyataan 1). Kita juga telah sukses merancang perbandingan algoritma ansambel guna mendapatkan model dengan klasifikasi yang optimal (Pernyataan 2).
-- **Apakah berhasil mencapai setiap Goals yang diharapkan?**
-  Berhasil. Analisis EDA dan korelasi memberikan wawasan (*insights*) jernih terkait pemicu *burnout*. Proyek ini juga sukses mengevaluasi dua algoritma dalam dua skema parameter (baseline dan tuned) untuk mendapatkan arsitektur model dengan performa paling maksimal (Mencapai *Accuracy*, *Precision*, *Recall*, dan *F1-Score* rata-rata sebesar 71%).
-- **Apakah setiap Solution Statement yang direncakan berdampak?**
-  Sangat berdampak. Penggunaan teknik *Upsampling* secara fundamental berhasil mengeliminasi sifat bias pada model; terbukti dari nilai *Precision* dan *Recall* yang seimbang (71%) pada laporan klasifikasi Model Terbaik. Jika solusi ini tidak diterapkan, model mungkin hanya akan pandai mengenali kelas "Medium". Selain itu, penerapan eksperimen *baseline* vs *tuning* berdampak sangat vital, karena mampu menyelamatkan proyek dari memilih model yang mengalami *underfitting* pasca-*tuning*. Oleh karena itu, *Random Forest Baseline* resmi ditetapkan sebagai solusi akhir bisnis untuk mendeteksi profil kelelahan mental mahasiswa di institusi pendidikan.
+
+## Analisis Komponen Business Understanding
+Berdasarkan hasil eksperimen dan komponen Business Understanding, didapatkan analisis akhir untuk menyelaraskan evaluasi model terhadap rumusan bisnis proyek:
+
+### Problem Statements (Pernyataan dan Hasil Akhir Jawaban)
+- **Pernyataan Masalah 1:** Faktor-faktor apa saja dari pola penggunaan AI dan kebiasaan belajar yang memiliki korelasi paling signifikan terhadap tingkat risiko *burnout* mahasiswa? Melalui tahap persiapan dan analisis pola dan fitur korelasi, didapatkan bahwa lama waktu penggunaan ai, keberagaman tools ai yang digunakan dan tingkat anxiety seseorang berpengaruh signifikan terhadap tingkat burnout nya.
+- **Pernyataan Masalah 2:** Bagaimana cara membangun model *machine learning* yang akurat untuk mengklasifikasikan *Burnout Risk Level* (Low, Medium, High) menggunakan data perilaku mahasiswa tersebut? Melalui berbagai analisis dan pemrosesasan data, ketersediaan label pada data, serta kombinasi pengaturan hyperparameter yang sesuai dengan data, sehingga memungkinkan untuk membangun model machine learning yang akurat untuk menklasifikasikan *Burnout Risk Level*.
+
+### Goals (Apakah berhasil mencapai setiap Goals yang diharapkan?)
+Berhasil. Analisis EDA dan korelasi memberikan wawasan (*insights*) jernih terkait pemicu *burnout*. Proyek ini juga sukses mengevaluasi dua algoritma dalam dua skema parameter (baseline dan tuned) untuk mendapatkan arsitektur model dengan performa paling maksimal (Mencapai *Accuracy*, *Precision*, *Recall*, dan *F1-Score* rata-rata sebesar 71%).
+
+### Solution Statement (Apakah setiap Solution Statement yang direncakan berdampak?)
+Berdampak. Penggunaan teknik *Upsampling* secara fundamental berhasil mengeliminasi sifat bias pada model; terbukti dari nilai *Precision* dan *Recall* yang seimbang (71%) pada laporan klasifikasi Model Terbaik. Jika solusi ini tidak diterapkan, model mungkin hanya akan pandai mengenali kelas "Medium". Selain itu, penerapan eksperimen *baseline* vs *tuning* berdampak sangat vital, karena mampu menyelamatkan proyek dari memilih model yang mengalami *underfitting* pasca-*tuning*.
+
+### Hasil Akhir Dan Rekomendasi
+Berdasarkan hasil akhir, didapatkan keseluruhan problem statement yang sebelumnya dijabarkan, goals dan solution statement, telah berhasil dipenuhi. Random Forest dengan pengaturan default merupakan model terbaik yang dapat digunakan untuk mengklasifikasikan *Burnout Risk Level* dengan akurasi 71%. Akan tetapi akurasi ini kemungkinan masih dapat dioptimalkan jika saja kombinasi Hyperparameter yang digunakan lebih luas, namun dengan bayaran biaya komputasi yang cukup besar untuk mencari kombinasi yang sesuai. Model XGBoost memiliki kemungkinan untuk bisa menyusul performa dari Random Forest namun dengan kombinasi Hyperparameter yang lebih luas.
 
 ## Referensi
 [1] A. . Wafiq, A. Syawal, I. ., and Z. A. Ahmad, “Burnout Akademik di Era Digital dan Persepsi Mahasiswa terhadap Peluang Pemanfaatan Artificial Intelligence untuk Deteksi Dini”, JSIT, vol. 5, no. 3, pp. 426–434, Nov. 2025.
