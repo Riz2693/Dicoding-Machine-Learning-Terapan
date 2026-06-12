@@ -22,10 +22,10 @@ Model berbasis *Transformer* diimplementasikan untuk mengekstrak makna semantik 
 [4] Y. Kim, "Improving Query Representations for Dense Retrieval with Pseudo Relevance Feedback," IEEE Access, vol. 12, pp. 45120–45131, Mar. 2024.
 
 [5] J. Lin and X. Wang, "Generative Retrieval Overcomes Limitations of Dense Retrieval in Scientific Contexts," in Proc. IEEE International Conference on Big Data and Information Analytics, 2025, pp. 312–319.
+
+
 ## Business Understanding
-
 Proses klarifikasi masalah dan tujuan dalam pengembangan sistem rekomendasi ini didefinisikan sebagai berikut:
-
 
 ### Problem Statements
 
@@ -33,13 +33,11 @@ Proses klarifikasi masalah dan tujuan dalam pengembangan sistem rekomendasi ini 
 2. **Pernyataan Masalah 2:** Bagaimana cara membangun arsitektur sistem rekomendasi yang tidak hanya mencocokkan kata kunci eksak, tetapi mampu "memahami" makna semantik kueri untuk menemukan artikel yang relevan?
 3. **Pernyataan Masalah 3:** Mengingat dataset arXiv tidak memiliki data historis preferensi atau *rating* dari pembaca, bagaimana cara mengevaluasi performa sistem rekomendasi ini secara objektif?
 
-
 ### Goals
 
 1. **Jawaban Pernyataan Masalah 1:** Mengimplementasikan teknik pembersihan data (*Data Preparation*) berjenjang memanfaatkan kombinasi *Regular Expression* (Regex) tingkat lanjut dan normalisasi *Unidecode* untuk menstandarisasi sintaks LaTeX menjadi teks natural.
 2. **Jawaban Pernyataan Masalah 2:** Membangun dan membandingkan dua pendekatan model *Content-Based Filtering*: model berbasis frekuensi (TF-IDF) dan model berbasis semantik (*Sentence Transformers* dengan K-Nearest Neighbors).
 3. **Jawaban Pernyataan Masalah 3:** Merancang skema evaluasi *offline* melalui pendekatan *Dual-Metric* kuantitatif, menggunakan metrik *Cosine Similarity* (untuk mengukur kedekatan makna/semantik) dan *Jaccard Similarity* (untuk mengukur keberagaman variasi kosakata).
-
 
 ### Solution Approach
 
@@ -51,14 +49,13 @@ Pendekatan ini menggunakan representasi matriks statistik berbasis frekuensi (*T
 Pendekatan ini mendayagunakan *Pre-trained Model* arsitektur Transformer (`all-MiniLM-L6-v2`) untuk mengompresi teks dokumen ke dalam ruang vektor numerik berdimensi 384. Algoritma *K-Nearest Neighbors* difungsikan untuk menghitung jarak sudut (*Cosine*) kedekatan antar-dokumen.
 
 
-
 ## Data Understanding
 
-Data yang digunakan merupakan kumpulan metadata karya ilmiah terbuka dari [Cornell University arXiv Dataset](https://www.kaggle.com/datasets/Cornell-University/arxiv/data) yang diunduh langsung melalui repositori Kaggle. Mengingat *file* asli berupa JSON berukuran sangat besar (*Big Data*), ekstraksi data dilakukan menggunakan pola iterasi *Generator* (`yield`), dengan secara spesifik menyaring (*filtering*) data publikasi dari tahun **$\ge$ 2026** agar sistem difokuskan pada pemrosesan literatur sains termutakhir.
+Data yang digunakan merupakan kumpulan metadata karya ilmiah terbuka dari [Cornell University arXiv Dataset](https://www.kaggle.com/datasets/Cornell-University/arxiv/data) dengan total hingga 1.7 juta artikel yang diunduh langsung melalui repositori Kaggle. Mengingat *file* asli berupa JSON berukuran sangat besar (*Big Data*), ekstraksi data dilakukan menggunakan pola iterasi *Generator* (`yield`), dengan secara spesifik menyaring (*filtering*) data publikasi dari tahun **$\ge$ 2026** agar sistem difokuskan pada pemrosesan literatur sains termutakhir.
 
 ### Detail dan Penjelasan Seluruh Kolom/Fitur Dataset
 
-Berdasarkan struktur JSON yang diunduh, setiap satu blok entitas artikel karya ilmiah memuat 14 variabel metadata. Berikut adalah penjabaran keseluruhan variabel yang direkam dalam dataset aslinya:
+Berdasarkan struktur JSON yang diunduh, didapatkan 237.226 total blok entitas artikel dengan setiap satu blok entitas artikel karya ilmiah memuat 14 variabel metadata. Berikut adalah penjabaran keseluruhan variabel yang direkam dalam dataset aslinya:
 
 1. **`id`**: Identifier unik (kombinasi angka) untuk setiap artikel di arXiv. *String* ini sering digunakan sebagai ujung URL untuk mengakses makalah asli (contoh: *arxiv.org/abs/0704.0001*).
 2. **`submitter`**: Nama pihak atau perwakilan penulis yang bertugas mengunggah dan mengirimkan dokumen ke repositori arXiv.
@@ -75,7 +72,6 @@ Berdasarkan struktur JSON yang diunduh, setiap satu blok entitas artikel karya i
 13. **`update_date`**: Tanggal terakhir kalinya repositori arXiv memperbarui atau mensinkronisasi data makalah ini di sistem (*YYYY-MM-DD*).
 14. **`authors_parsed`**: Struktur data bentuk *list-of-lists* hasil pemrosesan internal Kaggle yang secara otomatis membedah kolom `authors` menjadi nama awalan, nama akhiran, dan afiliasi.
 
-
 ### Pemilihan Fitur (*Feature Selection*) dan Exploratory Data Analysis
 
 Mengingat pendekatan pemodelan berfokus pada metode *Content-Based Filtering* yang menitikberatkan pada analisis semantik tulisan, pemuatan seluruh 14 kolom ke dalam *Pandas DataFrame* akan membuang memori *RAM* secara sia-sia. Oleh karena itu, fitur-fitur administratif seperti `id`, `submitter`, `comments`, `journal-ref`, `doi`, `report-no`, `license`, `versions`, dan `authors_parsed` dieliminasi/ *didrop* dari awal.
@@ -86,7 +82,10 @@ Dari kelima fitur tersebut, dilakukan **Exploratory Data Analysis (EDA)** dengan
 
 1. **Pemeriksaan *Missing Value* & Duplikasi:** Tidak ditemukan adanya nilai kosong (*NaN*). Namun, sistem deteksi menemukan adanya data ganda akibat histori `update_date` yang tumpang-tindih. Data duplikat ini didrop secara permanen.
 2. **Distribusi Top-10 Kategori:** Hasil analisis visualisasi membuktikan bahwa bidang ilmu *Computer Science* dan fisika tingkat tinggi (*High Energy Physics*) mendominasi pasokan jurnal global pada filter tahun $>2026$.
+<img width="868" height="547" alt="image" src="https://github.com/user-attachments/assets/1b01acde-2fb4-4f22-8638-9ca3cf09e630" />
+
 3. **Ekstraksi Fitur Waktu:** Kolom `update_date` diformat menjadi atribut diskrit (`year` dan `month`) untuk melihat produktivitas submission jurnal bulanan para peneliti, yang menunjukkan adanya *seasonality* produktivitas riset.
+<img width="868" height="547" alt="image" src="https://github.com/user-attachments/assets/694e21ac-acf5-4e90-9903-fc8c4c4a9af6" />
 
 
 
@@ -96,85 +95,107 @@ Tahapan persiapan data dilakukan secara berurutan (*pipeline*) untuk mentransfor
 
 1. **Pembatasan Skala via Generator:** Memuat baris JSON menggunakan teknik Python `yield` dipadukan pemfilteran tahun. Ini krusial agar memori komputasi tidak mengalami *Crash* saat harus menangani data orisinal seberat puluhan Gigabyte.
 2. **Case Folding:** Menurunkan seluruh karakter alfabet pada setiap kolom (`.str.lower()`) untuk menjaga stabilitas sensitivitas kapital model NLP.
-3. **Pembersihan Regex per-Kolom (Domain-Specific Cleaning):**
+3. **Menghapus Kolom yang Tidak Diperlukan (update_date):** Menghapus kolom update_date secara permanen menggunakan perintah drop(). Hal ini dilakukan karena informasi waktu dari kolom tersebut telah diekstrak dan diwakili secara sempurna oleh fitur turunan year dan month.
+4. **Penghapusan Data Duplikat & Reset Index:** Menghapus 3 pasangan data duplikat yang terdeteksi secara aktual dari peninjauan subset kolom (authors, title, categories, abstract). Setelah duplikat dihapus, dilakukan pemanggilan fungsi reset_index(drop=True) agar penomoran urutan data kembali berurutan dari angka 0.
+
+5. **Pembersihan Regex per-Kolom (Domain-Specific Cleaning):**
     * *`bersihkan_title`*: Menghapus tanda penanda *subscript* (`_`), *dollar* (`$`), dan aksen kurung kurawal (`{}`) yang merupakan formula *inline-math* LaTeX. (Alasan: Model bahasa akan bingung dan terdistraksi jika menemui variabel komputasi matematika di tengah judul teks).
     * *`bersihkan_abstract`*: Menghapus operator komparasi (`:=`) dan *backslash* (`\`).
     * *`bersihkan_categories`*: Mengganti spasi antar-kode keilmuan dengan koma `,`. (Alasan: Koma memberikan demarkasi entitas bagi *Self-Attention mechanism* pada *Transformer* agar memahami batasan subjek disiplin ilmu).
     * *`bersihkan_author`*: Membuang catatan kaki berupa angka afiliasi kampus di dalam tanda kurung.
 
-4. **Pembersihan Dasar (Unidecode & Whitespace):** Menormalkan karakter alfabet asing menjadi ASCII (contoh `Balázs` $\rightarrow$ `Balazs`) serta meluruhkan *multiple-whitespace* menjadi *single-space*.
-5. **Text Concatenation (Feature Engineering):** Menyatukan kolom dominan menjadi *string* padat tunggal bertajuk `combined_text` dengan format `"title: [judul]. abstract: [abstrak]"`. (Alasan strategis: Jika fitur *author* dan kategori diikutkan ke penggabungan, ide pokok penelitian akan mengalami apa yang disebut *Semantic Dilution*/Pelemahan Vektor. Sistem didesain murni menilai ide, bukan mengutamakan *author* terkenal).
-6. **Tokenisasi & Lemmatisasi (Eksklusif TF-IDF):** Menggunakan pustaka *NLTK* untuk *word_tokenize* dan *WordNetLemmatizer* guna menyeragamkan berbagai *suffix* kata ke akar dasarnya. (Alasan: TF-IDF berbasis statistik penghitungan frekuensi (Bag-of-Words). Tanpa *Lemmatization*, kata kerja bentuk lampau dan bentuk berjalan akan terhitung sebagai kolom fitur yang sepenuhnya terpisah, membuat dimensi model bengkak).
-
+6. **Pembersihan Dasar (Unidecode & Whitespace):** Menormalkan karakter alfabet asing menjadi ASCII (contoh `Balázs` $\rightarrow$ `Balazs`) serta meluruhkan *multiple-whitespace* menjadi *single-space*.
+7. **Text Concatenation (Feature Engineering):** Menyatukan kolom dominan menjadi *string* padat tunggal bertajuk `combined_text` dengan format `"title: [judul]. abstract: [abstrak]"`. (Alasan strategis: Jika fitur *author* dan kategori diikutkan ke penggabungan, ide pokok penelitian akan mengalami apa yang disebut *Semantic Dilution*/Pelemahan Vektor. Sistem didesain murni menilai ide, bukan mengutamakan *author* terkenal).
+8. **Tokenisasi & Lemmatisasi (Eksklusif TF-IDF):** Menggunakan pustaka *NLTK* untuk *word_tokenize* dan *WordNetLemmatizer* guna menyeragamkan berbagai *suffix* kata ke akar dasarnya. (Alasan: TF-IDF berbasis statistik penghitungan frekuensi (Bag-of-Words). Tanpa *Lemmatization*, kata kerja bentuk lampau dan bentuk berjalan akan terhitung sebagai kolom fitur yang sepenuhnya terpisah, membuat dimensi model bengkak).
 
 
 ## Modeling
 
-Sistem ini berevolusi dan dimodelkan di atas konsep arsitektur *Content-Based Filtering*. Berikut adalah penjabaran dua solusi algoritma yang diteliti kinerjanya:
+Sistem ini dimodelkan di atas konsep arsitektur *Content-Based Filtering*. Berikut adalah penjabaran dua solusi algoritma yang diteliti kinerjanya:
 
 ### Pendekatan 1: TF-IDF & Cosine Similarity (Baseline Model)
 
 Sistem memproses fitur teks termodifikasi ke dalam matriks frekuensi komparatif renggang (*Sparse Matrix*) memanfaatkan fasilitas `TfidfVectorizer` dari *Scikit-Learn*.
     
-  * **Parameter Unik:** Dilakukan optimasi efisiensi RAM berupa `min_df=5` (mengeliminasi kata langka/*typo* yang muncul di < 5 jurnal) dan `max_df=0.8` (membuang kata repetitif yang mendominasi lebih dari 80% jurnal keseluruhan). Batas kosa kata (*Vocabulary*) dijaga pada 10.000 bobot (*max_features*).
+  * **Parameter Unik:** Dilakukan optimasi efisiensi RAM berupa `min_df=5` (mengeliminasi kata langka/*typo* yang muncul di < 5 jurnal) dan `max_df=0.8` (membuang kata repetitif yang mendominasi lebih dari 80% jurnal keseluruhan). Batas kosa kata (*Vocabulary*) dijaga pada 10.000 bobot kata tertinggi (*max_features*).
   * **Kelebihan:** Sangat ringan dan memakan waktu komputasi sepersekian detik, akurasi tinggi pada pencarian jurnal menggunakan *exact keyword matching* spesifik.
   * **Kekurangan:** Tidak sanggup memahami kedekatan konteks. Sebuah kueri berjudul "deep learning" tidak akan merekomendasikan artikel bersubjek "neural networks" karena perbedaan kombinasi susunan huruf.
 
 ### Pendekatan 2: Sentence Transformers & KNN (Model Utama)
 
-Sistem memanfaatkan arsitektur Deep Learning bernama *Transformers* (*Pre-trained Model* `all-MiniLM-L6-v2` / `allenai-specter` via API Hugging Face). Model akan memampatkan narasi dokumen panjang menjadi garis vektor matematis (*Dense Matrix*) dimensi 384 di dalam sebuah ruang representasi. Kemudian algoritma `NearestNeighbors` bertugas mengukur dan menarik dokumen-dokumen yang jarak sudurnya bertetangga.
-  * **Parameter Unik**: Membuka metrik jarak khusus `metric='cosine'` pada algoritma ruang pencari `algorithm='brute'`.
+Sistem memanfaatkan arsitektur Deep Learning bernama *Transformers* (*Pre-trained Model* `all-MiniLM-L6-v2` via API Hugging Face). Model akan memampatkan narasi dokumen panjang menjadi garis vektor matematis (*Dense Matrix*) dimensi 384 di dalam sebuah ruang representasi. Kemudian algoritma `NearestNeighbors` bertugas mengukur dan menarik dokumen-dokumen yang jarak sudurnya bertetangga.
+  * **Parameter Unik**: Menggunakan konfigurasi algorithm=`auto` dipadukan dengan penghitungan sudut metric=`cosine` untuk mengakumulasi jarak ketetanggaan antar-dokumen di ruang multi-dimensi.
   * **Kelebihan**: Mampu menerobos hambatan *Semantic Gap*. Walaupun menggunakan frasa kata yang diparafrase total secara kosakatanya, model ini tetap mendeteksi bahwa gagasan atau topik utama kedua makalah adalah sama.
-  * **Kekurangan**: Fase *encoding* merender teks teks menjadi vektor membutuhkan memori (*VRAM*) masif dan mutlak membutuhkan dukungan kapabilitas *Graphical Processing Unit* (GPU).
+  * **Kekurangan**: Tahap *encoding* yang merender kumpulan teks mentah ke dalam bentuk representasi embeddings memerlukan memori operasional (RAM/GPU) yang terlampau besar.
 
-**Output Simulasi Sistem (Top-5 Recommendation):**
-Jika pengguna mengirim kueri pencarian: *"mathematical theory of deep learning"*, model berbasis *Sentence Transformers* sukses membongkar topik linier dan mengembalikan DataFrame 5 literatur teratas berikut:
+## Output Sistem Rekomendasi (Top-5 Recommendation):
 
-| Rank | Title | Categories | Year |
-| --- | --- | --- | --- |
-| 1 | mathematical theory of deep learning | math.oc, cs.lg | 2026 |
-| 2 | deep learning and theoretical mechanics | cs.lg | 2026 |
-| 3 | approximation theories of neural networks | math.na | 2026 |
-| 4 | understanding deep neural networks via calculus | cs.ai | 2026 |
-| 5 | optimization landscape of deep networks | math.oc | 2026 |
+Berdasarkan input kueri aktual dari pengguna, yaitu abstrak yang memuat konteks "mathematical theory of deep learning", berikut adalah hasil daftar rekomendasi faktual yang ditarik oleh kedua model:
 
-*(Catatan: Referensi daftar di atas adalah penyajian representasi simulasi semantik dari eksperimen *Output Dataset*).*
+   1. Model Berbasis TF-IDF & Cosine Similarity
+
+| Index | Title | Authors | Categories | Abstrach | Year | Cosine Score |
+| --- | --- | --- | --- | --- | --- | --- |
+| 37514 | mathematical theory of deep learning | philipp petersen and jakob zech | cs.lg, math.ho | this book provides an introduction to the math... | 2026 | 0.624958 |
+| 158704 | mathematical foundations of deep learning | xiaojing ye | cs.lg, math.oc | this draft book offers a comprehensive and rig... | 2026 | 0.545734 |
+| 177603 | weaves, wires, and morphisms: formalizing and ... | vincent abbott, gioele zardini | cs.lg, math.ct | despite deep learning models running well-defi... | 2026 | 0.443212 |
+| 192052 | there will be a scientific theory of deep lear... | jamie simon, daniel kunin, alexander atanasov,... | stat.ml, cs.lg | in this paper, we make the case that a scienti... | 2026 | 0.424222 |
+| 192296 | math takes two: a test for emergent mathematic... | michael cooper and samuel cooper | cs.ai, cs.lg | although language models demonstrate remarkabl... | 2026 | 0.382550 |
+
+   2. Model Berbasis Sentence Transformers & KNN
+
+| Index | Title | Authors | Categories | Abstrach | Year |
+| --- | --- | --- | --- | --- | --- | 
+| 37514 | mathematical theory of deep learning | philipp petersen and jakob zech | cs.lg, math.ho | this book provides an introduction to the math... | 2026 | 
+| 158704 | mathematical foundations of deep learning | xiaojing ye | cs.lg, math.oc | this draft book offers a comprehensive and rig... | 2026 | 
+| 20495 | deep learning: an introduction for applied mat... | catherine f. higham and desmond j. higham | math.ho, cs.lg, cs.na, math.na, stat.ml | multilayered artificial neural networks are be... | 2026 | 
+| 192052 | there will be a scientific theory of deep lear... | jamie simon, daniel kunin, alexander atanasov,... | stat.ml, cs.lg | in this paper, we make the case that a scienti... | 2026 | 
+| 19226 | a representer theorem for deep kernel learning | bastian bohn, michael griebel, christian rieger | cs.lg, cs.na, math.na | in this paper we provide a finite-sample and a... | 2026 | 
+
 
 ## Evaluation
 
-Tidak adanya historis label *rating* atau matriks klik dari *user* menyebabkan algoritma tidak bisa dikuantifikasi menggunakan metrik kepuasan baku seperti presisi *RMSE* atau *Precision@K User*. Alih-alih, evaluasi dikonstruksikan berdasarkan metodologi pengujian obyektif bernama *Beyond Accuracy Evaluation* yang terdistribusi ke dalam dua *Dual-Metric*. Pengujian dilakukan *offline* kepada 100 kueri acak:
+Evaluasi sistem rekomendasi dilakukan dengan tujuan mendapakan nilai keakuratan dari output yang dihasilkan sistem rekomendasi, terdapat beberapa metode yang dapat digunakan untuk sistem rekomendasi terutama untuk sistem rekomendasi *Content-Based Filtering* sebagai contoh diantaranya adalah metrik **Precision@K** dan **NDCG@K**. Berikut merupakan tahapan evaluasi dari sistem rekomendasi menggunakan metrik **Precision@K** dan **NDCG@K**.
 
-### 1. Metrik Cosine Similarity (Evaluasi Keselarasan Ide / Semantik)
+### Penetapan Ground Truth (Nilai Relevansi)
+Sistem rekomendasi biasanya membutuhkan informasi rekaman interaksi pengguna (seperti *Rating* atau histori Klik) untuk dapat mengevaluasi hasil rekomendasi, namun dikarenakan dataset jurnal arXiv tidak memuat data rekaman interaksi pengguna tersebut, nilai relevansi (*Ground Truth*) diukur menggunakan keselarasan atribut fitur **Categories (Kategori Ilmu)**.
 
-Berfungsi mengkalkulasi derajat kesejajaran linear orientasi dari vektor dokumen asli dengan rekomendasi topiknya. Parameter skala diukur dari -1 (berlawanan) hingga 1 (selaras identik).
+* **Definisi Relevan (Nilai 1):** Artikel yang direkomendasikan memiliki minimal satu (1) irisan kategori ilmiah (`categories`) yang sama dengan artikel yang dikuerikan oleh pengguna.
+* **Definisi Tidak Relevan (Nilai 0):** Tidak ada satupun kategori ilmu yang beririsan.
+
+### 1. Metrik Precision@K
+
+*Precision@K* berfungsi mengkalkulasi rasio kemunculan item relevan (Kategori sama) yang berhasil terdeteksi dalam daftar *Top-K* rekomendasi (K=5).
 **Formula:**
 
+$$Precision@K = \frac{\text{Jumlah rekomendasi relevan di daftar K}}{K}$$
 
-$$Cosine(A,B) = \frac{A \cdot B}{\|A\| \|B\|}$$
+### 2. Metrik NDCG@K (Normalized Discounted Cumulative Gain)
 
-* $A \cdot B$ mewakili penjumlahan elemen dari *dot product* kedua artikel teks tersebut.
-* $\|A\| \|B\|$ mewakili hasil perkalian magnitudo garis murni dari vektornya.
-
-### 2. Metrik Jaccard Similarity (Evaluasi Kebaruan/Keragaman Kosakata Leksikal)
-
-Metode evaluasi ini memfilter himpunan kosakata agar model AI tidak melulu menyuguhkan artikel plagiarisme atau *copy-paste* parsial (*Intra-List Diversity*). Jaccard mengalkulasi persilangan kata (*keyword overlap*) di atas panjang teks > 3 karakter.
+Sementara Precision hanya menghitung *jumlah*, **NDCG@K** mengevaluasi *kualitas peringkat*. NDCG memberikan bobot penalti (potongan nilai logaritmik) apabila artikel yang relevan justru ditempatkan oleh sistem di urutan peringkat yang paling bawah.
 **Formula:**
 
+$$NDCG@K = \frac{DCG@K}{IDCG@K}$$
 
-$$J(A,B) = \frac{|A \cap B|}{|A \cup B|}$$
+*(Dimana DCG adalah bobot diskon kumulatif aktual, dan IDCG adalah susunan diskon kumulatif paling ideal/sempurna).*
+
+### Hasil Evaluasi (A/B Testing Eksperimen)
+
+Pengujian matriks pemeringkatan dilakukan dengan mengambil 100 sampel indeks artikel kueri secara acak dari dataset (*offline evaluation*). Berikut adalah skor evaluasi aktual keluaran *notebook*:
+
+**1. Baseline Model (Algoritma TF-IDF)**
+
+* **Rata-rata Precision@5 : 63.80%**
+* **Rata-rata NDCG@5      : 81.19%**
+* *Analisis:* Performa model klasikal membuahkan hasil pemeringkatan yang cukup moderat. Hal ini terjadi karena TF-IDF bertindak buta berdasarkan probabilitas jumlah kata secara kaku. Jika kueri mengandung teks tertentu, TF-IDF akan merespon dengan menarik artikel sembarang yang sering mengulang terminologi yang sama, meskipun pada akhirnya artikel tersebut tidak selaras secara kategori ilmu aslinya.
+
+**2. Main Model (Algoritma Sentence Transformers)**
+
+* **Rata-rata Precision@5 : 83.60%**
+* **Rata-rata NDCG@5      : 94.03%**
+* *Analisis:* Terjadi lompatan kualitas nilai pemeringkatan yang teramat masif. Model sukses memastikan nyaris 4 hingga 5 artikel yang direkomendasikan dalam daftar Top-5 merupakan disiplin ilmu (Categories) yang benar-benar relevan dengan pencarian user (Precision > 83%). Di sisi lain, skor NDCG yang turut membubung hingga melampaui 94% memvalidasi bahwa mesin pemeringkat Transformers bukan hanya berhasil menarik entitas relevan, melainkan sukses menyajikannya di urutan rekomendasi paling atas/prioritas.
 
 
-*(Irisan kosakata yang sama persis dibagi dengan gabungan unik dari seluruh narasi kosakata).*
+## Konklusi Proyek
 
-### Hasil Evaluasi (A/B Testing Eksperimen Komparasi)
-
-Hasil pengukuran pada 100 dokumen *offline-sample* menyajikan konfirmasi keberhasilan model:
-
-* **Baseline Model (Algoritma 1 TF-IDF):** Menghasilkan **Cosine Similarity: $\approx$ 15-25%**.
-*Analisis Eksekusi:* Skor anjlok ini memvalidasi teori NLP klasik: Metrik Cosine pada mesin TF-IDF menghitung kedekatan murni dari irisan kosa kata persis/ *Exact Match*. Hasilnya jelek karena penulis jurnal selalu menggunakan sinonim leksikal yang beragam yang gagal dicerna algoritma ini.
-* **Main Model (Algoritma 2 Sentence Transformers):**
-Menghasilkan **Cosine Similarity: $\approx$ 65-75%** dengan tingkat pertukaran kosakata **Jaccard Similarity: $\approx$ 7-15%**.
-*Analisis Eksekusi:* Ini adalah "*Sweet Spot*" dari performa Machine Learning cerdas. Nilai Cosine-nya mengangkasa tinggi (>70%) yang mengonfirmasi bahwa arah bahasan penelitian selaras. Secara paralel, skor Jaccard di angka 7-15% memberi validasi bahwa kendati idenya sama, kedua teks ditulis menggunakan struktur susunan pilihan kosakata yang hampir berbeda sama sekali.
-
-**Konklusi Proyek:**
-Pembersihan reguler *Domain-Specific LaTeX* yang dipadukan dengan metode *Deep Learning Embeddings* membuahkan hasil kinerja *Content-Based Filtering* yang cukup memuaskan. Sistem rekomendasi secara empiris berhasil menjembatani celah *Semantic Gap*, menghadirkan alat pencarian jurnal arXiv yang toleran terhadap format, responsif terhadap konteks ide, dan menjamin keberagaman diksi literatur penelitian.
+Arsitektur penelusuran semantik berlandaskan *Sentence Transformers Embeddings* dibuktikan mutlak lebih superior dalam menangani fenomena ledakan informasi pustaka dibandingkan metode TF-IDF klasik. Penerapan instrumen metrik yang relevan (**Precision@K** dan **NDCG@K**) mengonfirmasi secara valid dan faktual bahwa sistem *Machine Learning* yang direkayasa berhasil mengatasi hambatan Semantic Gap, menghadirkan rekomendasi yang presisi, kontekstual secara pemahaman ide, dan sangat optimal secara pemeringkatannya.
